@@ -1,19 +1,24 @@
-# Clases Lista Doblemente Ligada DCEL (Vertex), (HalfEdge), Face
+# Clases base: Point, TipoVertice, NodoVertice, MediaArista, DCEL
 
-class Vertex:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.incident_edge = None  # Apunta a una HalfEdge que sale de aquí
+class TipoVertice:
+    def __init__(self, tipo):
+        self.tipo = tipo
+
+class NodoVertice:
+    def __init__(self, point, vertex_type):
+        self.point = point
+        self.vertex_type = vertex_type
 
 class MediaArista:
     def __init__(self):
-        self.origin = None         # Vértice de origen (Vertex)
-        self.twin = None           # Su arista gemela (HalfEdge)
+        self.origin = None         # Vértice de origen (NodoVertice)
+        self.twin = None           # Su arista gemela (MediaArista)
         self.next = None           # Siguiente arista en el recorrido
         self.prev = None           # Arista anterior
         self.incident_face = None  # Cara a la que pertenece esta arista (Face)
 
-class Face:
+class DCEL:
     def __init__(self):
-        self.outer_component = None # Apunta a una de las aristas del borde del polígono
+        self.vertices = []
+        self.half_edges = []
+        self.faces = []
