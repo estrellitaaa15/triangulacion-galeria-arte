@@ -57,17 +57,27 @@ def brute_force_triangulation(vertices):
     triangles.append((polygon[0], polygon[1], polygon[2]))
     return triangles
 
-if __name__ == "__main__":
+def construir_grafo_dual(triangulos):
+    adyacencia = {i: [] for i in range(len(triangulos))}
+    aristas = {}  
 
-    v0 = Point(0, 0, 0)
-    v1 = Point(4, 0, 1)
-    v2 = Point(4, 2, 2)
-    v3 = Point(2, 2, 3)
-    v4 = Point(2, 5, 4)
-    v5 = Point(0, 5, 5)
+    for i, (a, b, c) in enumerate(triangulos):
+        for u, v in ((a, b), (b, c), (c, a)):
+            clave = frozenset((u.id, v.id))
+            aristas.setdefault(clave, []).append(i)
+
+    for lista in aristas.values():
+        if len(lista) == 2:  
+            i, j = lista
+            adyacencia[i].append(j)
+            adyacencia[j].append(i)
+
+    return adyacencia
     
-    P = [v0, v1, v2, v3, v4, v5]
-    triangulos = brute_force_triangulation(P)
+def tres_coloracion(triangulos, adyacencia):
+    colores = {}
+    a, b, c = triangulos[0]
+    colores[a], colores[b], colores[c] = 0, 1, 2    
     
     print(f"Total de triángulos: {len(triangulos)} (Esperados: {len(P)-2})")
     for idx, t in enumerate(triangulos):
