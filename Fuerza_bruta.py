@@ -99,5 +99,24 @@ def tres_coloracion(triangulos, adyacencia):
             for p in triangulos[vecinos]
                 if p not in colores:
                     colores[p] = ({0,1,2} - colores_usados).pop()
+            fila.append(vecino)
+
+    return colores
+
+
+def seleccionar_camaras(colores):
+    grupos = {0: [], 1: [], 2: []}
+    for punto, color in colores.items():
+        grupos[color].append(punto)
+
+    mejor = min(grupos, key=lambda c: len(grupos[c]))
+    return sorted(grupos[mejor], key=lambda p: p.id), grupos
+
+
+def verificar(triangulos, colores, camaras, n):
+    tres_colores = all(len({colores[p] for p in t}) == 3 for t in triangulos)
+    cubiertos = all(any(p in camaras for p in t) for t in triangulos)
+    limite = len(camaras) <= n // 3
+    return tres_colores, cubiertos, limite
 
 
