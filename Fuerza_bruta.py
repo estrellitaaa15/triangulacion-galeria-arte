@@ -8,5 +8,67 @@ class Point:
         return f"V{self.id}({self.x}, {self.y})"
 
 def cross_product(p1, p2, p3):
-    # Determinante de matriz 3x3: > 0 giro a la izquierda (convexo), < 0 giro a la derecha (reflejo)
+
     return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)
+def is_point_in_triangle(pt, v1, v2, v3):
+
+    d1 = cross_product(v1, v2, pt)
+    d2 = cross_product(v2, v3, pt)
+    d3 = cross_product(v3, v1, pt)
+    has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
+    has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
+    return not (has_neg and has_pos)
+
+def is_ear(p_prev, p_curr, p_next, polygon):
+
+    if cross_product(p_prev, p_curr, p_next) <= 0:
+        return False
+
+    for pt in polygon:
+        if pt in (p_prev, p_curr, p_next):
+            continue
+        if is_point_in_triangle(pt, p_prev, p_curr, p_next):
+            return False
+    return True
+
+def brute_force_triangulation(vertices):
+    polygon = vertices[:]
+    triangles = []
+
+    while len(polygon) > 3:
+        n = len(polygon)
+        ear_found = False
+        
+        for i in range(n):
+            p_prev = polygon[i - 1]
+            p_curr = polygon[i]
+            p_next = polygon[(i + 1) % n]
+
+            if is_ear(p_prev, p_curr, p_next, polygon):
+
+                triangles.append((p_prev, p_curr, p_next))
+                polygon.pop(i)
+                ear_found = True
+                break
+        
+        if not ear_found:
+            raise ValueError("Error: Polígono no simple o degenerado.")
+
+    triangles.append((polygon[0], polygon[1], polygon[2]))
+    return triangles
+
+if __name__ == "__main__":
+
+    v0 = Point(0, 0, 0)
+    v1 = Point(4, 0, 1)
+    v2 = Point(4, 2, 2)
+    v3 = Point(2, 2, 3)
+    v4 = Point(2, 5, 4)
+    v5 = Point(0, 5, 5)
+    
+    P = [v0, v1, v2, v3, v4, v5]
+    triangulos = brute_force_triangulation(P)
+    
+    print(f"Total de triángulos: {len(triangulos)} (Esperados: {len(P)-2})")
+    for idx, t in enumerate(triangulos):
+        print(f"T{idx+1}: {t[0]}, {t[1]}, {t[2]}")
