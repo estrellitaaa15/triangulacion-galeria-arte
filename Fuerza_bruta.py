@@ -1,3 +1,5 @@
+from collections import deque
+
 class Point:
     def __init__(self, x, y, id_punto):
         self.x = x
@@ -82,3 +84,20 @@ def tres_coloracion(triangulos, adyacencia):
     print(f"Total de triángulos: {len(triangulos)} (Esperados: {len(P)-2})")
     for idx, t in enumerate(triangulos):
         print(f"T{idx+1}: {t[0]}, {t[1]}, {t[2]}")
+
+    visitados = {0}
+    fila = deque([0])
+
+    while fila:
+        actual = fila.popleft()
+        for vecino in adyacencia[actual]:
+            if vecino in visitados:
+                continue
+            visitados.add(vecino)
+
+            colores_usados = {colores[p] for p in triangulos[vecino] if p in colores}
+            for p in triangulos[vecinos]
+                if p not in colores:
+                    colores[p] = ({0,1,2} - colores_usados).pop()
+
+
