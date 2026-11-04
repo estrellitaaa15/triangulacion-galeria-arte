@@ -33,12 +33,13 @@ class TipoVertice(Enum):
   REGULAR = 5
 
 class NodoVertice:
-  __slots__ = 'P', 'prev', 'next'
-  def __init__(self, P, prev, next):
-    self.P = P #Objeto Point
-    self.tipoVertice = None
-    self.prev = prev
-    self.next = next
+    __slots__ = 'P', 'prev', 'next', 'tipoVertice'   # tipoVertice agregado
+
+    def __init__(self, P, prev=None, next=None):
+        self.P = P
+        self.tipoVertice = None
+        self.prev = prev
+        self.next = next
 
 class MediaArista:
   __slots__ = 'origenP', 'twin', 'next', 'prev', 'trianguloPertenece'
@@ -68,4 +69,4 @@ class DCEL:
     aristasDeP2 = None
 
     for arista in self.mediasAristas:
-        pass   
+        raise NotImplementedError("masDiagonal: falta reconectar punteros")
