@@ -4,25 +4,26 @@ from enum import Enum, unique
 
 #Clases
 class Point:
-  verticeID = 0
-  def __init__(self, x: float, y: float):
-    Point.verticeID += 1
-    self.idVertice = PointverticeID
-    self.color = None
-    self.x = float(x)
-    self.y = float(y)
+    def __init__(self, x, y, id_punto):
+        self.x = x
+        self.y = y
+        self.id = id_punto
 
-  def __lt__(self, P): #P son los objetos tipo Point
-    if self.y == P.y:
-      return self.x < P.x
-    return self.y > P.y
+    def __repr__(self):
+        return f"V{self.id}({self.x}, {self.y})"
 
-  @staticmethod #Permite ejecutar el método directamente desde la clase sin necesidad de instanciar un objeto
-  def crossProduct(P1, P2, P3):
-    return (P2.x - P1.x) * (P3.y - P1.y) - (P2.y - P1.y) * (P3.x - P1.x)
-    #Det positiva: giro izq
-    #Det negativa: giro der
-    #Det 0: recta
+def cross_product(p1, p2, p3):
+    return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)
+
+def is_point_in_triangle(pt, v1, v2, v3):
+
+    d1 = cross_product(v1, v2, pt)
+    d2 = cross_product(v2, v3, pt)
+    d3 = cross_product(v3, v1, pt)
+    has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
+    has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
+    return not (has_neg and has_pos)
+
 
 class TipoVertice(Enum):
   START = 1
