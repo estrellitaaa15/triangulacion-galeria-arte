@@ -10,8 +10,8 @@ class Point:
         return f"V{self.id}({self.x}, {self.y})"
 
 def cross_product(p1, p2, p3):
-
     return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)
+
 def is_point_in_triangle(pt, v1, v2, v3):
 
     d1 = cross_product(v1, v2, pt)
@@ -96,7 +96,7 @@ def tres_coloracion(triangulos, adyacencia):
             visitados.add(vecino)
 
             colores_usados = {colores[p] for p in triangulos[vecino] if p in colores}
-            for p in triangulos[vecinos]
+            for p in triangulos[vecinos]:
                 if p not in colores:
                     colores[p] = ({0,1,2} - colores_usados).pop()
             fila.append(vecino)
