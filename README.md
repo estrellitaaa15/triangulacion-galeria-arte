@@ -25,6 +25,9 @@ Imprime los triángulos, el árbol dual, la coloración y las cámaras de dos po
 ## Cómo ejecutar las pruebas unitarias
 ```bash
 python -m unittest discover -s tests -p "test*.py" -v
+python -m unittest tests.tests_fuerza_bruta -v
+python -m unittest tests.tests_dcel -v
+python -m unittest tests.test_monotone -v
 ```
 
 ## Cómo funciona la fuerza bruta
