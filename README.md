@@ -4,23 +4,21 @@ Proyecto final de Estructura de Datos y Algoritmos. Dado un polígono simple de 
 
 ## Cómo ejecutar la fuerza bruta
 
-Todos los comandos se ejecutan desde la **raíz del repositorio** (la carpeta triangulación-galería-arte)
+Todos los comandos se ejecutan desde la **raíz del repositorio**.
 
-1. Clonar el repositorio y entrar a la carpeta:
+Para ejecutar la implementación exhaustiva del archivo raíz:
 
 ```bash
-git clone [https://github.com/estrellitaaa15/triangulacion-galeria-arte](https://github.com/estrellitaaa15/triangulacion-galeria-arte)
-
-cd triangulacion-galeria-arte
+python Fuerza_bruta.py
 ```
 
-2. Ejecutar:
+También existe `src/fuerza_bruta.py`, que se ejecuta por separado:
+
 ```bash
 python -m src.fuerza_bruta
 ```
 
-Imprime los triángulos, el árbol dual, la coloración y las cámaras de dos polígonos de ejemplo.
-* No usar el botón del play de VS Code ni de python src/fuerza_bruta.py
+La versión del archivo raíz enumera todas las triangulaciones posibles y escoge la que usa menos cámaras. La versión de `src/` sigue el algoritmo de recorte de orejas. Ambos imprimen ejemplos; para probar la versión exhaustiva usa el primer comando.
 
 ## Cómo ejecutar las pruebas unitarias
 ```bash
@@ -30,8 +28,20 @@ python -m unittest tests.tests_dcel -v
 python -m unittest tests.test_monotone -v
 ```
 
-## Cómo funciona la fuerza bruta
-1. **Triangulación (recorte de orejas):** se busca un vértice conexo cuyo triángulo no contenga otros vérices, se corta y se repite. Complejidad O(n³).
-2. **Grafo dual:** cada triángulo es un nodo; dos triángulos se conectan si comparten una diagonal.
-3. **3-Coloración:** se recorre el árbol dual con BFS asignando 3 colores a los vértices
-4. **Cámaras:** se elige el color con menos vértices que son lo a lo más ⌊n/3⌋.
+## Cómo medir cuándo se vuelve lento
+
+Las pruebas unitarias revisan que el resultado sea correcto; no sirven para medir hasta qué tamaño tarda demasiado. Para ese experimento, desde la raíz ejecuta:
+
+```bash
+python benchmark_fuerza_bruta.py --timeout 5 --max-n 12
+```
+
+El benchmark genera polígonos convexos regulares de tamaño creciente, mide cada ejecución en un proceso separado y muestra cuántas triangulaciones encontró. Para un polígono convexo de `n` vértices, el conteo esperado es el número de Catalan `C_(n-2)`. Si un tamaño supera el límite de tiempo, el proceso de ese tamaño se detiene y el benchmark termina; aumenta `--timeout` o `--max-n` solo si quieres explorar más.
+
+## Cómo funciona la versión exhaustiva
+1. Construye las diagonales que quedan dentro del polígono.
+2. Prueba combinaciones de `n - 3` diagonales y descarta las que se cruzan o no forman una cobertura válida.
+3. Para cada triangulación, crea el grafo dual y colorea sus vértices con 3 colores.
+4. Elige la clase de color más pequeña como conjunto de cámaras, y conserva la triangulación con menos cámaras.
+
+Las pruebas de `tests/tests_fuerza_bruta.py` comprueban que un cuadrado produce 2 triangulaciones y un hexágono convexo 14. También verifican que cada resultado tenga `n - 2` triángulos, cubra el área, mantenga el árbol dual esperado y permita colocar cámaras dentro del límite. El tiempo crece rápidamente al aumentar el número de vértices, porque se exploran combinaciones.

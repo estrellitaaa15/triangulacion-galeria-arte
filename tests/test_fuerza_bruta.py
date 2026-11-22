@@ -1,21 +1,72 @@
-# Pruebas de creación de un polígono pequeño (como un cuadrado o hexágono) 
-# para saber si el algoritmo de fuerza bruta logra triangularlo sin fallas
+# Pruebas de polígonos pequeños para comprobar la triangulación exhaustiva.
 import unittest
-from src.fuerza_bruta import Point, brute_force_triangulation
+
+from Fuerza_bruta import (
+    Point,
+    area_poligono,
+    construir_grafo_dual,
+    cross_product,
+    enumerar_triangulaciones_fuerza_bruta,
+    seleccionar_camaras,
+    tres_coloracion,
+    verificar,
+)
+
 
 class TestFuerzaBruta(unittest.TestCase):
-    def test_cuadrado(self):
-        # Polígono de 4 vértices
-        cuadrado = [Point(0, 0, 0), Point(2, 0, 1), Point(2, 2, 2), Point(0, 2, 3)]
-        triangulos = brute_force_triangulation(cuadrado)
-        self.assertEqual(len(triangulos), 2) # n-2 triángulos[cite: 4, 27]
-        
-    def test_hexagono(self):
-        # Polígono de 6 vértices
-        hexagono = [Point(1, 0, 0), Point(2, 0, 1), Point(3, 1, 2), 
-                    Point(2, 2, 3), Point(1, 2, 4), Point(0, 1, 5)]
-        triangulos = brute_force_triangulation(hexagono)
-        self.assertEqual(len(triangulos), 4) # n-2 triángulos[cite: 6, 27]
+    def comprobar_triangulaciones(self, vertices, triangulaciones):
+        for triangulos in triangulaciones:
+            self.assertEqual(len(triangulos), len(vertices) - 2)
 
-if __name__ == '__main__':
+            area_triangular = sum(
+                abs(cross_product(*triangulo)) / 2 for triangulo in triangulos
+            )
+            self.assertAlmostEqual(area_triangular, abs(area_poligono(vertices)))
+
+            dual = construir_grafo_dual(triangulos)
+            self.assertEqual(
+                sum(len(vecinos) for vecinos in dual.values()) // 2,
+                len(vertices) - 3,
+            )
+            colores = tres_coloracion(triangulos, dual)
+            camaras, _ = seleccionar_camaras(colores)
+            self.assertEqual(
+                verificar(triangulos, colores, camaras, len(vertices)),
+                (True, True, True),
+            )
+
+    def test_cuadrado(self):
+        cuadrado = [
+            Point(0, 0, 0),
+            Point(2, 0, 1),
+            Point(2, 2, 2),
+            Point(0, 2, 3),
+        ]
+        triangulaciones = enumerar_triangulaciones_fuerza_bruta(cuadrado)
+
+        self.assertEqual(len(triangulaciones), 2)
+        self.comprobar_triangulaciones(cuadrado, triangulaciones)
+
+    def test_hexagono(self):
+        hexagono = [
+            Point(1, 0, 0),
+            Point(2, 0, 1),
+            Point(3, 1, 2),
+            Point(2, 2, 3),
+            Point(1, 2, 4),
+            Point(0, 1, 5),
+        ]
+        triangulaciones = enumerar_triangulaciones_fuerza_bruta(hexagono)
+
+        self.assertEqual(len(triangulaciones), 14)
+        self.comprobar_triangulaciones(hexagono, triangulaciones)
+
+    def test_poligono_de_area_cero(self):
+        vertices = [Point(0, 0, 0), Point(1, 0, 1), Point(2, 0, 2)]
+
+        with self.assertRaises(ValueError):
+            enumerar_triangulaciones_fuerza_bruta(vertices)
+
+
+if __name__ == "__main__":
     unittest.main()
