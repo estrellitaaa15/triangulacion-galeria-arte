@@ -3,6 +3,7 @@
 
 from collections import deque
 from src.dcel import Point, cross_product, is_point_in_triangle
+import math
 
 
 def is_ear(p_prev, p_curr, p_next, polygon):
@@ -146,3 +147,15 @@ if __name__ == "__main__":
     P8 = [Point(0,0,0), Point(3,0,1), Point(3,2,2), Point(6,2,3),
           Point(6,5,4), Point(4,7,5), Point(2,5,6), Point(0,4,7)]
     resolver("Polígono en P8", P8)
+
+    n = 300
+    radio = 100
+    P300 = [
+        Point(
+            radio * math.cos(2 * math.pi * i / n),
+            radio * math.sin(2 * math.pi * i / n),
+            i,
+        )
+        for i in range(n)
+    ]
+    resolver("Polígono regular", P300)
