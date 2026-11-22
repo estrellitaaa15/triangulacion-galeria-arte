@@ -1,3 +1,4 @@
+#Importa librerías para exportar tablas CSV, manejar rutas, medir tiempos de CPU y registrar fechas
 import csv
 import os
 import time
@@ -10,7 +11,7 @@ from src.generador_poligonos import (
     generarPoligonoPeine,
 )
 
-
+#Calcula el área exacta del polígono original usando la fórmula de determinantes (Shoelace)
 def calcularAreaPoligono(coords: list[tuple[float, float]]) -> float:
     n = len(coords)
     suma = 0.0
@@ -20,7 +21,7 @@ def calcularAreaPoligono(coords: list[tuple[float, float]]) -> float:
         suma += (x1 * y2 - x2 * y1)
     return abs(suma) / 2.0
 
-
+#Suma el área individual de todos los triángulos generados (la mitad del producto cruz de cada triángulo)
 def calcularAreaTriangulos(triangulos: list[tuple[Point, Point, Point]]) -> float:
     return sum(abs(Point.crossProduct(p1, p2, p3)) / 2.0 for p1, p2, p3 in triangulos)
 
@@ -32,8 +33,9 @@ def ejecutarYGuardarResultados(
     repeticiones: int = 5,
     limiteTiempoSeg: float = 5.0,
 ):
+    #Crea la carpeta de resultados si aún no existe en el repositorio
     os.makedirs(os.path.dirname(rutaCsv), exist_ok=True)
-
+    #Si todavía no existe el archivo JSON con polígonos, genera un conjunto base automáticamente para evitar errores
     if not os.path.exists(rutaJson):
         os.makedirs(os.path.dirname(rutaJson), exist_ok=True)
         datasetInicial = {
@@ -47,9 +49,10 @@ def ejecutarYGuardarResultados(
 
     dataset = cargarDatasetJson(rutaJson)
 
-    # Ordenar instancias de menor a mayor número de vértices (n)
+    #Ordenar instancias de menor a mayor número de vértices (n)
     instanciasOrdenadas = sorted(dataset.items(), key=lambda item: len(item[1]))
 
+    #Define las columnas para el archivo CSV y el formato alineado de la tabla visual en texto
     encabezadosCsv = [
         "fecha_hora",
         "instancia",
@@ -82,6 +85,7 @@ def ejecutarYGuardarResultados(
     archivoCsvExiste = os.path.exists(rutaCsv)
     marcaTiempo = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    #Abre el CSV en modo agregar ('a') para conservar el historial de todas las corridas anteriores
     with open(rutaCsv, mode="a", newline="", encoding="utf-8") as archivoCsv:
         escritor = csv.writer(archivoCsv)
         if not archivoCsvExiste:
@@ -92,6 +96,7 @@ def ejecutarYGuardarResultados(
             ultimoResultado = None
             excedioLimite = False
 
+            #Ejecuta el algoritmo varias veces con un cronómetro de alta precisión para promediar el tiempo de CPU
             for _ in range(repeticiones):
                 inicio = time.perf_counter()
                 ultimoResultado = triangularPoligono(coords)
@@ -106,6 +111,7 @@ def ejecutarYGuardarResultados(
             tiempoPromSeg = sum(tiemposSeg) / len(tiemposSeg)
             tiempoPromMs = tiempoPromSeg * 1000.0
 
+            #Si alguna instancia tarda más del límite permitido, detiene el experimento y lo registra en la tabla
             if excedioLimite:
                 filaTxt = (
                     f"{nombreInstancia:<14} | {n:>4} | {f'> {limiteTiempoSeg:.1f}s':>10} | "
@@ -114,22 +120,24 @@ def ejecutarYGuardarResultados(
                 lineasTabla.append(filaTxt)
                 break
 
+            #Extrae el total de triángulos, diagonales, cámaras asignadas y el límite máximo de Fisk (n // 3)
             nTriangulos = len(ultimoResultado["triangulos"])
             nDiagonales = nTriangulos - 1
             nCamaras = len(ultimoResultado["camaras"])
             cotaFisk = n // 3
 
-            # Toma el contador exacto si existe en TrianguladorPoligono o estima operaciones base
+            #Toma el contador exacto si existe en TrianguladorPoligono o estima operaciones base
             trianguladorObj = ultimoResultado["triangulador"]
             operaciones = getattr(trianguladorObj, "operaciones", 0)
             if operaciones == 0:
-                # Conteo mínimo estructural: ordenamiento + barrido + pila + árbol dual + BFS
+                #Conteo mínimo estructural: ordenamiento + barrido + pila + árbol dual + BFS
                 operaciones = (n * (n.bit_length())) + (3 * n) + nTriangulos
-
+            #Comprueba que la suma de áreas de los triángulos coincida con el área original sin solapamientos
             areaOriginal = calcularAreaPoligono(coords)
             areaTriangulada = calcularAreaTriangulos(ultimoResultado["triangulos"])
             diffArea = abs(areaOriginal - areaTriangulada)
 
+            #Verifica que se cumplan todos los invariantes geométricos y teóricos para marcar la prueba como OK
             esValida = (
                 (nTriangulos == n - 2)
                 and (nDiagonales == n - 3)
@@ -139,6 +147,7 @@ def ejecutarYGuardarResultados(
             estadoStr = "OK" if esValida else "ERROR"
             camarasStr = f"{nCamaras}/{cotaFisk}"
 
+            #Escribe la fila de datos en el CSV y da formato visual a la fila de la tabla en texto
             escritor.writerow([
                 marcaTiempo,
                 nombreInstancia,
@@ -163,7 +172,7 @@ def ejecutarYGuardarResultados(
 
     lineasTabla.append(separadorTabla)
     contenidoTabla = "\n".join(lineasTabla)
-
+    #Guarda la tabla formateada en el archivo .txt y la imprime directamente en la terminal
     with open(rutaTablaTxt, mode="a", encoding="utf-8") as archivoTxt:
         archivoTxt.write(contenidoTabla + "\n")
 

@@ -1,7 +1,8 @@
+#Importa la función principal del algoritmo óptimo, la clase geométrica Point y el generador de polígonos
 from src.algoritmo_optimo import triangularPoligono, Point
 from src.generador_poligonos import generarPoligonoEstrella
 
-
+#Calcula el área exacta del polígono original sumando los determinantes de sus aristas (fórmula de Shoelace)
 def calcularAreaPoligono(coords: list[tuple[float, float]]) -> float:
     n = len(coords)
     suma = 0.0
@@ -11,15 +12,15 @@ def calcularAreaPoligono(coords: list[tuple[float, float]]) -> float:
         suma += (x1 * y2 - x2 * y1)
     return abs(suma) / 2.0
 
-
+#Suma el área de cada triángulo individual (mitad del valor absoluto del producto cruz) para validar conservación de área
 def calcularAreaTriangulos(triangulos: list[tuple[Point, Point, Point]]) -> float:
     return sum(abs(Point.crossProduct(p1, p2, p3)) / 2.0 for p1, p2, p3 in triangulos)
 
 
-# 1. Prueba con el polígono en L de 6 vértices (ejemplo de la Fase 1)
+#1. Prueba con el polígono en L de 6 vértices (ejemplo de la Fase 1)
 poligonoL = [(0, 0), (4, 0), (4, 2), (2, 2), (2, 5), (0, 5)]
 resL = triangularPoligono(poligonoL)
-
+#Desglosa en consola las diagonales internas, los 4 triángulos formados, los colores asignados y las cámaras elegidas
 print("=== RESULTADO POLÍGONO EN L (n=6) ===")
 print("Diagonales trazadas:", resL["diagonales"])
 print("Triángulos generados (n - 2 = 4):")
@@ -29,12 +30,13 @@ print("Color asignado a cada vértice:", resL["diccPoint"])
 print("Cámaras óptimas (<= 2):", resL["camaras"])
 print(f"Área original: {calcularAreaPoligono(poligonoL)} | Suma áreas triángulos: {calcularAreaTriangulos(resL['triangulos'])}")
 
-# 2. Verificación matemática en un polígono de 150 vértices
+#2.Verificación matemática en un polígono de 150 vértices
+#Genera un polígono estrella reproducible de 150 vértices y mide el área antes y después de triangular
 estrella150 = generarPoligonoEstrella(n=150, seed=42)
 res150 = triangularPoligono(estrella150)
 areaOrig = calcularAreaPoligono(estrella150)
 areaTri = calcularAreaTriangulos(res150["triangulos"])
-
+#Comprueba que se cumplan los invariantes teóricos (n - 2 triángulos, <= n // 3 cámaras y diferencia de área cercana a cero)
 print("\n=== VERIFICACIÓN POLÍGONO GRANDE (n=150) ===")
 print(f"Triángulos: {len(res150['triangulos'])} (esperados: 148)")
 print(f"Cámaras: {len(res150['camaras'])} (máximo permitido: {150 // 3})")

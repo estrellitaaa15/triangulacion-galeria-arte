@@ -1,3 +1,4 @@
+#Importa 'os' para crear carpetas, 'matplotlib' para generar las gráficas, el algoritmo óptimo y el lector de JSON
 import os
 import matplotlib.pyplot as plt
 from src.algoritmo_optimo import triangularPoligono
@@ -5,21 +6,25 @@ from src.generador_poligonos import cargarDatasetJson
 
 
 def dibujarPoligonoTriangulado(ax, coords: list, titulo: str, mostrarEtiquetas: bool = False):
+    #Ejecuta el algoritmo óptimo sobre el polígono para obtener sus triángulos, 3-coloración y cámaras
     res = triangularPoligono(coords)
 
-    # 1. Dibujar el relleno y las diagonales internas de cada triángulo
+    #1. Dibujar el relleno y las diagonales internas de cada triángulo
+    #Repite el primer punto (p1) al final para cerrar los 3 lados de cada triángulo y rellenarlo con transparencia
     for p1, p2, p3 in res["triangulos"]:
         xs = [p1.x, p2.x, p3.x, p1.x]
         ys = [p1.y, p2.y, p3.y, p1.y]
         ax.fill(xs, ys, color="#836AB8", alpha=0.12)
         ax.plot(xs, ys, linestyle="--", color="#836AB8", linewidth=0.9, alpha=0.85)
 
-    # 2. Dibujar el contorno exterior del polígono
+    #2. Dibujar el contorno exterior del polígono
+    #Extrae por separado las coordenadas X e Y y vuelve a agregar el vértice inicial para cerrar la frontera
     contornoX = [p[0] for p in coords] + [coords[0][0]]
     contornoY = [p[1] for p in coords] + [coords[0][1]]
     ax.plot(contornoX, contornoY, color="#432F64", linewidth=2.2, label="Frontera P")
 
-    # 3. Dibujar los vértices pintados según su 3-coloración {0, 1, 2}
+    #3. Dibujar los vértices pintados según su 3-coloración {0, 1, 2}
+    #Pinta cada vértice según su grupo de color {0, 1, 2} y coloca su nombre (V1, V2...) si está activado
     coloresVertices = {0: "#E63946", 1: "#2A9D8F", 2: "#F4A261"}
     for vertice, colorId in res["diccPoint"].items():
         ax.scatter(vertice.x, vertice.y, color=coloresVertices[colorId], s=45, zorder=4)
@@ -32,7 +37,8 @@ def dibujarPoligonoTriangulado(ax, coords: list, titulo: str, mostrarEtiquetas: 
                 color="#222222",
             )
 
-    # 4. Resaltar con un círculo negro dónde se colocan las cámaras óptimas
+    #4. Resaltar con un círculo negro dónde se colocan las cámaras óptimas
+    #Dibuja un aro negro sin relleno sobre los vértices seleccionados como cámaras para distinguirlos del color base
     camarasX = [c.x for c in res["camaras"]]
     camarasY = [c.y for c in res["camaras"]]
     ax.scatter(
@@ -45,7 +51,7 @@ def dibujarPoligonoTriangulado(ax, coords: list, titulo: str, mostrarEtiquetas: 
         zorder=5,
         label=f"Cámaras ({len(res['camaras'])})",
     )
-
+    #Configura el título con el conteo de triángulos/cámaras y fuerza escala 1:1 ('equal') para no deformar la figura
     ax.set_title(
         f"{titulo}\nTriángulos: {len(res['triangulos'])} | Cámaras: {len(res['camaras'])}/{res['nVertices'] // 3}",
         fontsize=10,
@@ -57,21 +63,22 @@ def dibujarPoligonoTriangulado(ax, coords: list, titulo: str, mostrarEtiquetas: 
 
 
 def visualizarTodasDesdeJson(rutaJson: str = "data/poligonos_benchmark.json"):
+    #Crea la carpeta 'graficas/' si aún no existe y carga todos los polígonos guardados en el archivo JSON
     os.makedirs("graficas", exist_ok=True)
     datos = cargarDatasetJson(rutaJson)
-
+    #Recorre cada instancia del JSON, dibuja su triangulación y guarda una imagen PNG de alta resolución 
     for nombrePrueba, coords in datos.items():
         fig, ax = plt.subplots(figsize=(7, 7))
-        # Solo muestra etiquetas V1, V2... si el polígono tiene 20 vértices o menos para no saturar
+        #Solo muestra etiquetas V1, V2... si el polígono tiene 20 vértices o menos para no saturar
         etiquetas = len(coords) <= 20
         dibujarPoligonoTriangulado(ax, coords, f"Prueba: {nombrePrueba} (n={len(coords)})", mostrarEtiquetas=etiquetas)
 
         rutaImagen = f"graficas/{nombrePrueba}.png"
         plt.tight_layout()
         plt.savefig(rutaImagen, dpi=300)
-        plt.close(fig)  # Libera memoria entre gráfica y gráfica
+        plt.close(fig)  #Libera memoria entre gráfica y gráfica
         print(f"Gráfica guardada: {rutaImagen}")
 
-
+#Punto de entrada para generar todas las gráficas al ejecutar 'python -m src.visualizador_optimo'
 if __name__ == "__main__":
     visualizarTodasDesdeJson()
