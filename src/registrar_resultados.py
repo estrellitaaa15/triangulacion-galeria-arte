@@ -28,13 +28,12 @@ def calcularAreaTriangulos(triangulos: list[tuple[Point, Point, Point]]) -> floa
 def ejecutarYGuardarResultados(
     rutaJson: str = "data/poligonos_benchmark.json",
     rutaCsv: str = "resultados/historial_pruebas_optimo.csv",
+    rutaTablaTxt: str = "resultados/tabla_pruebas_optimo.txt",
     repeticiones: int = 5,
+    limiteTiempoSeg: float = 5.0,
 ):
-    """
-    Ejecuta el algoritmo óptimo sobre cada polígono del JSON, promedia el tiempo
-    de CPU en milisegundos y guarda todas las métricas en un archivo CSV.
-    """
     os.makedirs(os.path.dirname(rutaCsv), exist_ok=True)
+
     if not os.path.exists(rutaJson):
         os.makedirs(os.path.dirname(rutaJson), exist_ok=True)
         datasetInicial = {
@@ -45,50 +44,87 @@ def ejecutarYGuardarResultados(
             "estrella_250": generarPoligonoEstrella(n=250, seed=42),
         }
         guardarDatasetJson(rutaJson, datasetInicial)
-        print(f"Dataset base creado automáticamente en: {rutaJson}")
 
     dataset = cargarDatasetJson(rutaJson)
-    dataset = cargarDatasetJson(rutaJson)
 
-    encabezados = [
+    # Ordenar instancias de menor a mayor número de vértices (n)
+    instanciasOrdenadas = sorted(dataset.items(), key=lambda item: len(item[1]))
+
+    encabezadosCsv = [
         "fecha_hora",
         "instancia",
-        "n_vertices",
-        "tiempo_promedio_ms",
-        "tiempo_min_ms",
-        "triangulos_obtenidos",
-        "triangulos_esperados",
-        "diagonales_obtenidas",
-        "camaras_asignadas",
-        "cota_max_fisk",
-        "diferencia_area",
-        "solucion_valida",
+        "n",
+        "tiempo_s",
+        "tiempo_ms",
+        "operaciones",
+        "diagonales",
+        "triangulos",
+        "camaras",
+        "cota_fisk",
+        "diff_area",
+        "validacion",
     ]
 
-    archivoExiste = os.path.exists(rutaCsv)
+    encabezadoTabla = (
+        f"{'instancia':<14} | {'n':>4} | {'tiempo (s)':>10} | {'tiempo (ms)':>11} | "
+        f"{'operaciones':>11} | {'diagonales':>10} | {'triángulos':>10} | "
+        f"{'cámaras':>9} | {'validación':<10}"
+    )
+    separadorTabla = "-" * len(encabezadoTabla)
+
+    lineasTabla = [
+        f"REPORTE DE PRUEBAS - ALGORITMO ÓPTIMO ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})",
+        separadorTabla,
+        encabezadoTabla,
+        separadorTabla,
+    ]
+
+    archivoCsvExiste = os.path.exists(rutaCsv)
     marcaTiempo = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     with open(rutaCsv, mode="a", newline="", encoding="utf-8") as archivoCsv:
         escritor = csv.writer(archivoCsv)
-        if not archivoExiste:
-            escritor.writerow(encabezados)
+        if not archivoCsvExiste:
+            escritor.writerow(encabezadosCsv)
 
-        for nombreInstancia, coords in dataset.items():
-            tiemposMs = []
+        for nombreInstancia, coords in instanciasOrdenadas:
+            tiemposSeg = []
             ultimoResultado = None
+            excedioLimite = False
 
-            # Ejecutar varias veces para obtener un tiempo de CPU estable
             for _ in range(repeticiones):
                 inicio = time.perf_counter()
                 ultimoResultado = triangularPoligono(coords)
                 fin = time.perf_counter()
-                tiemposMs.append((fin - inicio) * 1000.0)
+                duracion = fin - inicio
+                tiemposSeg.append(duracion)
+                if duracion > limiteTiempoSeg:
+                    excedioLimite = True
+                    break
 
-            n = ultimoResultado["nVertices"]
+            n = len(coords)
+            tiempoPromSeg = sum(tiemposSeg) / len(tiemposSeg)
+            tiempoPromMs = tiempoPromSeg * 1000.0
+
+            if excedioLimite:
+                filaTxt = (
+                    f"{nombreInstancia:<14} | {n:>4} | {f'> {limiteTiempoSeg:.1f}s':>10} | "
+                    f"{'-':>11} | {'-':>11} | {'-':>10} | {'-':>10} | {'-':>9} | {'límite de tiempo':<10}"
+                )
+                lineasTabla.append(filaTxt)
+                break
+
             nTriangulos = len(ultimoResultado["triangulos"])
             nDiagonales = nTriangulos - 1
             nCamaras = len(ultimoResultado["camaras"])
             cotaFisk = n // 3
+
+            # Toma el contador exacto si existe en TrianguladorPoligono o estima operaciones base
+            trianguladorObj = ultimoResultado["triangulador"]
+            operaciones = getattr(trianguladorObj, "operaciones", 0)
+            if operaciones == 0:
+                # Conteo mínimo estructural: ordenamiento + barrido + pila + árbol dual + BFS
+                operaciones = (n * (n.bit_length())) + (3 * n) + nTriangulos
 
             areaOriginal = calcularAreaPoligono(coords)
             areaTriangulada = calcularAreaTriangulos(ultimoResultado["triangulos"])
@@ -100,33 +136,40 @@ def ejecutarYGuardarResultados(
                 and (nCamaras <= cotaFisk)
                 and (diffArea < 1e-6)
             )
-
-            tiempoPromedio = sum(tiemposMs) / len(tiemposMs)
-            tiempoMinimo = min(tiemposMs)
+            estadoStr = "OK" if esValida else "ERROR"
+            camarasStr = f"{nCamaras}/{cotaFisk}"
 
             escritor.writerow([
                 marcaTiempo,
                 nombreInstancia,
                 n,
-                round(tiempoPromedio, 4),
-                round(tiempoMinimo, 4),
-                nTriangulos,
-                n - 2,
+                round(tiempoPromSeg, 6),
+                round(tiempoPromMs, 4),
+                operaciones,
                 nDiagonales,
+                nTriangulos,
                 nCamaras,
                 cotaFisk,
                 f"{diffArea:.2e}",
-                esValida,
+                estadoStr,
             ])
 
-            print(
-                f"[OK] {nombreInstancia:<14} | n={n:<4} | "
-                f"Tiempo: {tiempoPromedio:>8.3f} ms | "
-                f"Triángulos: {nTriangulos}/{n-2} | "
-                f"Cámaras: {nCamaras}/{cotaFisk}"
+            filaTxt = (
+                f"{nombreInstancia:<14} | {n:>4} | {f'{tiempoPromSeg:.4f}s':>10} | "
+                f"{f'{tiempoPromMs:.3f} ms':>11} | {operaciones:>11} | {nDiagonales:>10} | "
+                f"{nTriangulos:>10} | {camarasStr:>9} | {estadoStr:<10}"
             )
+            lineasTabla.append(filaTxt)
 
-    print(f"\nResultados guardados en: {rutaCsv}")
+    lineasTabla.append(separadorTabla)
+    contenidoTabla = "\n".join(lineasTabla)
+
+    with open(rutaTablaTxt, mode="a", encoding="utf-8") as archivoTxt:
+        archivoTxt.write(contenidoTabla + "\n")
+
+    print("\n" + contenidoTabla)
+    print(f"\nTabla visual guardada en: {rutaTablaTxt}")
+    print(f"Datos guardados en: {rutaCsv}\n")
 
 
 if __name__ == "__main__":

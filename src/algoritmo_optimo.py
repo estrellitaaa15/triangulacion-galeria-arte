@@ -407,6 +407,7 @@ class TrianguladorPoligono:
         if not isinstance(dcel, DCEL):
             raise ErrorPoligonoInvalido("Se esperaba un objeto DCEL o una lista de objetos Point.")
 
+        self.operaciones = 0
         self.dcel = dcel
         self.diagonales = []
         self.triangulos = []
@@ -421,6 +422,7 @@ class TrianguladorPoligono:
             aristaPrev = arista.prev.origenP
             aristaActual = arista.origenP
             aristaNext = arista.next.origenP
+            self.operaciones += 1
             determinante = Point.crossProduct(aristaPrev, aristaActual, aristaNext)
             tipo = None
 
@@ -469,6 +471,7 @@ class TrianguladorPoligono:
 
         # Línea de barrido
         while not verticesOrdenados.is_empty():
+            self.operaciones += 1
             v = verticesOrdenados.dequeue()
             tipo = clasificacion[v]
 
@@ -553,12 +556,14 @@ class TrianguladorPoligono:
         pilaVertices = [verticesMonotono[0], verticesMonotono[1]]
 
         for i in range(2, len(verticesMonotono) - 1):
+            self.operaciones += 1
             verticeActual = verticesMonotono[i]
             verticeTope = pilaVertices[-1]
 
             # Caso 1: El vértice actual está en la cadena opuesta al último de la pila, se vacía la pila formando triángulos sucesivos
             if (verticeActual in cadenaIzquierda) != (verticeTope in cadenaIzquierda):
                 while len(pilaVertices) > 1:
+                    self.operaciones += 1
                     v1 = pilaVertices.pop()
                     v2 = pilaVertices[-1]
                     self.triangulos.append((verticeActual, v2, v1))
@@ -570,6 +575,7 @@ class TrianguladorPoligono:
             else:
                 vUltimo = pilaVertices.pop()
                 while len(pilaVertices) > 0:
+                    self.operaciones += 1
                     vPrevio = pilaVertices[-1]
                     # Verificar con crossProduct si el giro es válido para formar un triángulo interno
                     determinante = Point.crossProduct(vPrevio, vUltimo, verticeActual)
@@ -586,6 +592,7 @@ class TrianguladorPoligono:
         # Conectar el último vértice (el más bajo) con los vértices restantes en la pila
         verticeFinal = verticesMonotono[-1]
         while len(pilaVertices) > 1:
+            self.operaciones += 1
             v1 = pilaVertices.pop()
             v2 = pilaVertices[-1]
             self.triangulos.append((verticeFinal, v2, v1))
@@ -622,6 +629,7 @@ class TrianguladorPoligono:
 
         # Recorrido en anchura (BFS) con ArrayQueue para propagar la 3-coloración
         while not colaBFS.is_empty():
+            self.operaciones += 1
             trianguloActual = colaBFS.dequeue()
             for trianguloVecino in arbolDual.get(trianguloActual, []):
                 if trianguloVecino not in visitados:
