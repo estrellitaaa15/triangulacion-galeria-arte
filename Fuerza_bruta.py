@@ -267,43 +267,55 @@ def verificar(triangulos, colores, camaras, n):
     limite = len(camaras) <= n // 3
     return tres_colores, cubiertos, limite
 
-# Ejecuta el flujo completo de fuerza bruta, 3-coloreo y selección de cámaras.
+# Comprueba si un segmento entre dos vértices permanece dentro del polígono.
+def segmento_visible(desde, hasta, vertices):
+    if not punto_en_poligono(desde, vertices) or not punto_en_poligono(hasta, vertices):
+        return False
+    for paso in range(101):
+        t = paso / 100
+        punto = Point(
+            desde.x + t * (hasta.x - desde.x),
+            desde.y + t * (hasta.y - desde.y),
+            -1,
+        )
+        if not punto_en_poligono(punto, vertices):
+            return False
+    return True
+
+
+# Ejecuta el flujo completo: triangulación, proceso de combinaciones y mínimo exacto.
 def resolver(nombre, vertices):
     print(f"\n=== {nombre} (n = {len(vertices)}) ===")
 
     triangulaciones = enumerar_triangulaciones_fuerza_bruta(vertices)
     print(f"Triangulaciones válidas examinadas: {len(triangulaciones)}")
-# Evaluar todas las triangulaciones para quedarse con la que requiera menos cámaras
+
     mejor = None
-    for triangulos_candidatos in triangulaciones:
-        adyacencia_candidata = construir_grafo_dual(triangulos_candidatos)
-        colores_candidatos = tres_coloracion(
-            triangulos_candidatos, adyacencia_candidata)
-        camaras_candidatas, _ = seleccionar_camaras(colores_candidatos)
-        if mejor is None or len(camaras_candidatas) < len(mejor[2]):
-            mejor = (triangulos_candidatos, adyacencia_candidata,
-                     camaras_candidatas, colores_candidatos)
+    for cantidad in range(1, len(vertices) + 1):
+        candidatas = list(combinations(vertices, cantidad))
+        print(f"\nProbando {len(candidatas)} combinación(es) con {cantidad} cámara(s)")
 
-    triangulos, adyacencia, camaras, colores = mejor
-    print(f"Triángulos: {len(triangulos)} (esperados: {len(vertices) - 2})")
+        for camaras in candidatas:
+            cubiertos = set()
+            for camara in camaras:
+                for vertice in vertices:
+                    if segmento_visible(camara, vertice, vertices):
+                        cubiertos.add(vertice.id)
 
-    aristas_dual = sum(len(v) for v in adyacencia.values()) // 2
-    print(f"Árbol dual: {len(triangulos)} nodos, {aristas_dual} aristas "
-          f"(esperadas: {len(vertices) - 3})")
-    for i, vecinos in adyacencia.items():
-        print(f"  T{i + 1} -> {['T' + str(j + 1) for j in vecinos]}")
+            ids = [camara.id for camara in camaras]
+            cubre_todo = len(cubiertos) == len(vertices)
+            print(f"  Cámaras {ids}: cubiertos {sorted(cubiertos)} -> {'Sí' if cubre_todo else 'No'}")
 
-    _, grupos = seleccionar_camaras(colores)
-    for c in (0, 1, 2):
-        print(f"Color {c}: {sorted(grupos[c], key=lambda p: p.id)}")
+            if cubre_todo:
+                mejor = camaras
+                break
+        if mejor is not None:
+            break
 
-    print(f"Cámaras ({len(camaras)}, límite {len(vertices) // 3}): {camaras}")
-
-    ok_colores, ok_cobertura, ok_limite = verificar(
-        triangulos, colores, camaras, len(vertices))
-    print(f"Cada triángulo con 3 colores distintos: {ok_colores}")
-    print(f"Cada triángulo tiene una cámara:        {ok_cobertura}")
-    print(f"Cámaras <= floor(n/3):                  {ok_limite}")
+    print(f"\nÓptimo por fuerza bruta: {len(mejor)} cámara(s): {[p.id for p in mejor]}")
+    for camara in mejor:
+        visibles = [p.id for p in vertices if segmento_visible(camara, p, vertices)]
+        print(f"  Desde V{camara.id} se ven: {visibles}")
 
 
 if __name__ == "__main__": 

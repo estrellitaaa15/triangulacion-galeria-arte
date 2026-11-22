@@ -2,6 +2,7 @@
 # para encontrar una válida.
 
 from collections import deque
+from itertools import combinations
 from src.dcel import Point, cross_product, is_point_in_triangle
 import math
 
@@ -111,6 +112,86 @@ def verificar(triangulos, colores, camaras, n):
     limite = len(camaras) <= n // 3
     return tres_colores, cubiertos, limite
 
+
+def punto_en_segmento(punto, a, b, epsilon=1e-9):
+    orientacion = cross_product(a, b, punto)
+    dentro_ejes = (
+        min(a.x, b.x) - epsilon <= punto.x <= max(a.x, b.x) + epsilon
+        and min(a.y, b.y) - epsilon <= punto.y <= max(a.y, b.y) + epsilon
+    )
+    return abs(orientacion) <= epsilon and dentro_ejes
+
+
+def punto_en_poligono(punto, vertices):
+    dentro = False
+    for i, a in enumerate(vertices):
+        b = vertices[(i + 1) % len(vertices)]
+        if punto_en_segmento(punto, a, b):
+            return True
+        if (a.y > punto.y) != (b.y > punto.y):
+            x_cruce = a.x + (punto.y - a.y) * (b.x - a.x) / (b.y - a.y)
+            if punto.x < x_cruce:
+                dentro = not dentro
+    return dentro
+
+
+def segmento_visible(desde, hasta, vertices):
+    """Comprueba que el segmento se mantenga dentro del polígono."""
+    # Muestreo denso: cubre vértices y también el interior de los segmentos.
+    for paso in range(101):
+        t = paso / 100
+        punto = Point(
+            desde.x + t * (hasta.x - desde.x),
+            desde.y + t * (hasta.y - desde.y),
+            -1,
+        )
+        if not punto_en_poligono(punto, vertices):
+            return False
+    return True
+
+
+def vertices_cubiertos(camara, vertices, triangulos):
+    """Retorna los vértices visibles desde una cámara."""
+    return [
+        vertice for vertice in vertices
+        if segmento_visible(camara, vertice, vertices)
+    ]
+
+
+def resolver_minimo_por_fuerza_bruta(nombre, vertices):
+    """Busca la menor cantidad de cámaras probando todos los subconjuntos."""
+    print(f"\n=== {nombre} (n = {len(vertices)}) ===")
+
+    triangulos = brute_force_triangulation(vertices)
+    print(f"Triangulación inicial: {len(triangulos)} triángulos")
+    for indice, triangulo in enumerate(triangulos, 1):
+        print(f"  T{indice}: {[p.id for p in triangulo]}")
+
+    mejor = None
+    for cantidad in range(1, len(vertices) + 1):
+        candidatas = list(combinations(vertices, cantidad))
+        print(f"Probando {len(candidatas)} combinación(es) con {cantidad} cámara(s)")
+        for camaras in candidatas:
+            ids = [p.id for p in camaras]
+            cubiertos = set()
+            for camara in camaras:
+                for vertice in vertices_cubiertos(camara, vertices, triangulos):
+                    cubiertos.add(vertice.id)
+
+            cubre_todo = len(cubiertos) == len(vertices)
+            print(f"  Cámaras {ids}: cubiertos {sorted(cubiertos)} -> {'Sí' if cubre_todo else 'No'}")
+
+            if cubre_todo:
+                mejor = camaras
+                break
+        if mejor is not None:
+            break
+
+    print(f"Óptimo por fuerza bruta: {len(mejor)} cámara(s): {[p.id for p in mejor]}")
+    for camara in mejor:
+        print(f"  Desde V{camara.id} se ven: {[p.id for p in vertices_cubiertos(camara, vertices, triangulos)]}")
+    return list(mejor)
+
 def resolver(nombre, vertices):
     print(f"\n=== {nombre} (n = {len(vertices)}) ===")
 
@@ -140,22 +221,10 @@ def resolver(nombre, vertices):
     print(f"Cámaras <= floor(n/3):                  {ok_limite}")
 
 if __name__ == "__main__":
-    L = [Point(0,0,0), Point(4,0,1), Point(4,2,2), 
+    L = [Point(0,0,0), Point(4,0,1), Point(4,2,2),
          Point(2,2,3), Point(2,5,4), Point(0,5,5)]
-    resolver("Polígono en L", L)
+    resolver_minimo_por_fuerza_bruta("Polígono en L", L)
 
     P8 = [Point(0,0,0), Point(3,0,1), Point(3,2,2), Point(6,2,3),
           Point(6,5,4), Point(4,7,5), Point(2,5,6), Point(0,4,7)]
-    resolver("Polígono en P8", P8)
-
-    n = 300
-    radio = 100
-    P300 = [
-        Point(
-            radio * math.cos(2 * math.pi * i / n),
-            radio * math.sin(2 * math.pi * i / n),
-            i,
-        )
-        for i in range(n)
-    ]
-    resolver("Polígono regular", P300)
+    resolver_minimo_por_fuerza_bruta("Polígono en P8", P8)
