@@ -1,0 +1,6 @@
+fecha_hora,instancia,n_vertices,tiempo_promedio_ms,tiempo_min_ms,triangulos_obtenidos,triangulos_esperados,diagonales_obtenidas,camaras_asignadas,cota_max_fisk,diferencia_area,solucion_valida
+2026-11-22 04:50:00,L_6,6,0.1523,0.1038,4,4,3,2,2,0.00e+00,True
+2026-11-22 04:50:00,estrella_20,20,0.5343,0.4925,18,18,17,6,6,1.82e-12,True
+2026-11-22 04:50:00,peine_24,24,0.687,0.63,22,22,21,8,8,0.00e+00,True
+2026-11-22 04:50:00,peine_120,120,15.3236,9.8215,118,118,117,40,40,0.00e+00,True
+2026-11-22 04:50:00,estrella_250,250,100.3655,66.966,248,248,247,83,83,7.28e-12,True
