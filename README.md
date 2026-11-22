@@ -33,10 +33,12 @@ python -m unittest tests.test_monotone -v
 Las pruebas unitarias revisan que el resultado sea correcto; no sirven para medir hasta qué tamaño tarda demasiado. Para ese experimento, desde la raíz ejecuta:
 
 ```bash
-python benchmark_fuerza_bruta.py --timeout 5 --max-n 12
+python benchmark_fuerza_bruta.py --timeout 5
 ```
 
-El benchmark genera polígonos convexos regulares de tamaño creciente, mide cada ejecución en un proceso separado y muestra cuántas triangulaciones encontró. Para un polígono convexo de `n` vértices, el conteo esperado es el número de Catalan `C_(n-2)`. Si un tamaño supera el límite de tiempo, el proceso de ese tamaño se detiene y el benchmark termina; aumenta `--timeout` o `--max-n` solo si quieres explorar más.
+Por defecto, evalúa polígonos convexos regulares de 6, 20, 24, 120 y 250 vértices. Para cada uno calcula el conteo esperado según el número de Catalan `C_(n-2)`. Los casos que excedan 100.000 triangulaciones se omiten antes de ejecutarse, ya que el algoritmo exhaustivo guarda todas las triangulaciones en memoria; los demás se ejecutan en procesos separados con límite de tiempo, y un timeout no impide continuar con los siguientes tamaños.
+
+Puedes elegir otros tamaños con `--sizes 6 8 10` o usar `--max-n 12` para evaluar consecutivamente desde 4 hasta 12. Ajusta el timeout con `--timeout 5` y el umbral seguro de resultados con `--max-triangulations 100000`.
 
 ## Cómo funciona la versión exhaustiva
 1. Construye las diagonales que quedan dentro del polígono.
