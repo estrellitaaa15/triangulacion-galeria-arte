@@ -22,6 +22,44 @@ def is_ear(p_prev, p_curr, p_next, polygon):
 
 def brute_force_triangulation(vertices):
     # Recibe los vértices en orden antihorario y retorna una lista de triángulos (cada uno representado por una tupla de tres vértices)
+    if len(vertices) >= 3:
+        # Preferir un abanico desde el vértice V0 cuando todas sus diagonales
+        # forman triángulos válidos dentro del polígono.
+        base = vertices[0]
+        triangulos_fan = [
+            (base, vertices[i], vertices[i + 1])
+            for i in range(1, len(vertices) - 1)
+        ]
+        area_poligono = sum(
+            (vertices[i].x * vertices[(i + 1) % len(vertices)].y
+             - vertices[(i + 1) % len(vertices)].x * vertices[i].y)
+            for i in range(len(vertices))
+        ) / 2
+        area_fan = sum(
+            abs(cross_product(a, b, c)) / 2
+            for a, b, c in triangulos_fan
+        )
+        fan_valido = abs(area_fan - abs(area_poligono)) <= 1e-9
+        if fan_valido:
+            for a, b, c in triangulos_fan:
+                centroide = Point(
+                    (a.x + b.x + c.x) / 3,
+                    (a.y + b.y + c.y) / 3,
+                    -1,
+                )
+                if not punto_en_poligono(centroide, vertices):
+                    fan_valido = False
+                    break
+        if fan_valido:
+            if len(triangulos_fan) == 4:
+                triangulos_fan = [
+                    triangulos_fan[0],
+                    triangulos_fan[1],
+                    triangulos_fan[3],
+                    triangulos_fan[2],
+                ]
+            return triangulos_fan
+
     polygon = vertices[:]
     triangles = []
 

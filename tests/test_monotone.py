@@ -36,6 +36,16 @@ class TestTriangulador(unittest.TestCase):
         self.assertIsInstance(subpoligonos, list)
         self.assertEqual(len(subpoligonos), 1)
 
+    def test_triangulacion_poligono_L(self):
+        triangulos = brute_force_triangulation(self.puntos)
+        ids = [[p.id for p in triangulo] for triangulo in triangulos]
+        self.assertEqual(ids, [
+            [0, 1, 2],
+            [0, 2, 3],
+            [0, 4, 5],
+            [0, 3, 4],
+        ])
+
     def test_punto_repetido(self):
         with self.assertRaises(ValueError):
             TrianguladorPoligono([Point(0, 0, 0), Point(1, 0, 0), Point(0, 1, 2)])
